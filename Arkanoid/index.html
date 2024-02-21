@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkanoid</title>
+    <style>
+        body {
+            background-color: #141111;
+        }
+
+        canvas {
+            border: 4px solid #ffffff;
+            border-bottom: transparent;
+            background:url('./bkg.png') repeat;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <img  hidden id="sprite"  src="./sprite.png" alt="sprites para el juego"/> 
+    <img hidden id="bricks" src="./bricks.png" alt="ladrillos"/>
+
+
+    <script>
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 448;
+        canvas.height = 400;
+
+        const $sprite = document.querySelector('#sprite');
+        const $bricks = document.querySelector('#bricks');
+
+
+        // Variables de la pelota
+        let counter = 0;
+        const ballRadius = 4;
+        let x = canvas.width / 2;
+        let y = canvas.height - 30;
+        let dx = 2;
+        let dy = -2;
+        //variables de la paleta
+         const paddleHeight = 10;
+         const paddleWidth =50;
+
+         //variables de los ladrillos
+
+          const filasLadrillos = 6;
+          const columnasLadrillos = 13;
+          const tamañoLadrillo = 32;
+          const alturaLadrillo =16;
+          const separacionLadrillo =0;
+          const ladrillooffSetTop = 80;
+          const ladrilloOffSetLeft =15;
+          const ladrillos = [];
+          const ladrillo_status ={
+           ACTIVE:1,
+            DESTROYED:0
+          };
+
+
+
+
+
+
+          for(let c =0;c<columnasLadrillos; c++){
+            ladrillos[c] = []
+            for(let r = 0; r< filasLadrillos; r++){
+                //calculamos la posicion de los ladrillos en pantalla
+                const ladrilloX = c * (tamañoLadrillo + separacionLadrillo) 
+                + ladrilloOffSetLeft //el margen final lo sumamos solo una vez
+                const ladrilloY = r * (alturaLadrillo + separacionLadrillo) 
+                + ladrillooffSetTop
+                //colores a los ladrillos
+                const random = Math.floor(Math.random()*8)
+                //guardar la info de cada ladrillo
+                ladrillos[c][r] = {
+                     x: ladrilloX,
+                     y:ladrilloY,
+                     status:ladrillo_status.ACTIVE, 
+                     color:random
+                    }
+           
+            }
+          } 
+
+
+         let paddleX = (canvas.width - paddleWidth) /2;
+         let paddleY = canvas.height - paddleHeight -10;
+         let derechaPress = false;
+         let izquierdaPress = false;
+         const paddleSensitivity = 8;
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.closePath();
+        }
+        //dibujar paleta
+        function drawBarra() {
+          
+
+            ctx.drawImage(
+                $sprite, //imagen
+                29, //coordenadas de recorte
+                174,//coordenadas de recorte
+                paddleWidth, //tamaño del recorte
+                paddleHeight,//tamaño del recorte
+                paddleX,//posicion x del dibujo
+                paddleY, //posicion y del dibujo
+                paddleWidth, //ancho del dibujo
+                paddleHeight // alto del dibujo
+            )
+
+        }
+        function drawBricks() {
+            
+          for(let c =0;c<columnasLadrillos; c++){
+           
+            for(let r = 0; r< filasLadrillos; r++){
+                const currentBrick = ladrillos[c][r]
+                if(currentBrick.status === ladrillo_status.DESTROYED)
+                    continue;
+                    ctx.fillStyle ='yellow'
+                     ctx.rect(
+                        currentBrick.x,
+                        currentBrick.y,
+                        tamañoLadrillo,
+                        alturaLadrillo
+                    );
+                  //cargar imagenes de los ladrillos
+
+                    const clipx = currentBrick.color * 32 //posicion del sprite de los aldrillos
+                    ctx.drawImage(
+                        $bricks,
+                        clipx,
+                        0,
+                        31,
+                        14,
+                        currentBrick.x,
+                        currentBrick.y,
+                        tamañoLadrillo,
+                        alturaLadrillo
+
+                    )
+                
+
+            }
+        }
+        }
+        function colisiones() {
+            //rebote de pelota en bordes
+            if(
+                x + dx > canvas.width -ballRadius || //pared derecha
+                x + dx < ballRadius //pared izquierda
+                ){
+                dx = -dx;
+            }
+
+            //arriba
+            if(y + dy < ballRadius)
+            {
+                dy = -dy; }
+                //abajo y pala
+            const tocarPalaX = x> paddleX && x < paddleX + paddleWidth;
+            const tocarPalaY = y + dy > paddleY;
+                if( 
+                    tocarPalaX && tocarPalaY
+                ){
+                    dy = -dy //cambiar direccion pelota
+                }
+          else if(y + dy > canvas.height - ballRadius){
+            console.log ('Has muerto')
+            document.location.reload() //para que reinicie
+           }
+
+        }
+        function movPelota() {
+            x += dx;
+            y += dy          
+
+        }
+        //mover paleta (sensibilidad y colison de la paleta a los lados)
+        function movBarra() {
+
+            if(derechaPress && paddleX < canvas.width - paddleWidth){
+                paddleX += paddleSensitivity;
+
+            } else if (izquierdaPress && paddleX > 0){
+                paddleX -= paddleSensitivity; 
+            }
+
+
+            //colisiones de los ladrillos:
+            
+            for(let c =0;c<columnasLadrillos; c++){
+           
+           for(let r = 0; r< filasLadrillos; r++){
+               const currentBrick = ladrillos[c][r]
+               if(currentBrick.status === ladrillo_status.DESTROYED)continue;
+
+               const isBallSameXAsPaddle =  x> currentBrick.x && x< currentBrick.x + tamañoLadrillo
+               const isBallSameYAsPaddle =  y> currentBrick.y && y< currentBrick.y + alturaLadrillo
+
+                if (isBallSameXAsPaddle && isBallSameYAsPaddle
+                ){
+                    dy = -dy
+                    currentBrick.status = ladrillo_status.DESTROYED
+                }
+
+            }}
+
+        }
+
+        function cleanCanvas(){
+            ctx.clearRect(0,0,canvas.width,canvas.height) //limpiar todo el canvas
+        }
+
+
+
+        function initEvents (){
+            document.addEventListener('keydown', keyDownHandler)
+            document.addEventListener('keyup', keyUpHandler) // Corregido el evento Keyup
+
+            function keyDownHandler (event) {
+                const{ key} = event
+                if (key === 'ArrowRight'){ // 'Right' corregido a 'ArrowRight'
+                    derechaPress = true
+                }
+                else if (key === 'ArrowLeft'){ // 'left' corregido a 'ArrowLeft'
+                    izquierdaPress = true // 'izqueirdapress' corregido a 'izquierdaPress'
+                }
+            }
+
+
+            function keyUpHandler (event) {
+                const{ key} = event
+                if (key === 'ArrowRight'){ // 'Right' corregido a 'ArrowRight'
+                    derechaPress = false
+                }
+                else if (key === 'ArrowLeft'){ // 'left' corregido a 'ArrowLeft'
+                    izquierdaPress = false // 'izqueirdapress' corregido a 'izquierdaPress'
+                }
+            }    
+        }
+
+
+        function draw() {
+            cleanCanvas()
+            // Dibujar elementos en la pantalla
+            drawBall();
+            drawBarra();
+            drawBricks();
+
+            // Realizar colisiones y movimientos
+            colisiones();
+            movPelota();
+            movBarra();
+
+            // Solicitar el próximo cuadro de animación
+            window.requestAnimationFrame(draw);
+        }
+
+        // Llamar a la función draw para iniciar el bucle de animación
+        draw();
+        initEvents()
+    </script>
+</body>
+</html>
