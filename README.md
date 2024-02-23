@@ -1,2 +1,2 @@
-# Juego-javaScript
-juego de javaScript
+# Juegos-javaScript
+juegos de javaScript
