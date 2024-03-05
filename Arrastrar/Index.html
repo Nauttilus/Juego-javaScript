@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrastrar y soltar</title>
+    <style>
+        body{
+            background-color: rgb(29, 28, 28);
+        }
+        .div1{
+            width: 200px;
+            height: 200px;
+            background-color: aliceblue;
+        }
+    </style>
+</head>
+<body>
+    <div draggable="true" id="div1" class="div1"></div>
+
+    <script>
+        const arrastrar = document.querySelector("#div1");
+
+        arrastrar.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', 'Div arrastrado');
+        });
+        
+        arrastrar.addEventListener('dragend', e => {
+            console.log('Drag End');
+        });
+
+        const contenedor = document.querySelector('body');
+        contenedor.addEventListener('dragenter', e => {
+            console.log('Drag Enter');
+        });
+
+        contenedor.addEventListener('dragleave', e => {
+            console.log('Drag Leave');
+        });
+
+        contenedor.addEventListener('dragover', e => {
+            e.preventDefault();
+            console.log('Drag Over');
+        });
+
+        contenedor.addEventListener('drop', e => {
+            console.log('Drop');
+            contenedor.appendChild(arrastrar);
+        });
+    </script>
+    
+</body>
+</html>
